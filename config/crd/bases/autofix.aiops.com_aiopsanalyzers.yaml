@@ -68,13 +68,6 @@ spec:
                 properties:
                   allowedActions:
                     description: 允许的修复类型（可多选）
-                    enum:
-                    - scale
-                    - restart
-                    - config
-                    - traffic
-                    - resource
-                    - feature-toggle
                     items:
                       type: string
                     type: array

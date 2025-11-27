@@ -95,7 +95,7 @@ const (
 	FeishuUserID  FeishuReceiveIDType = "user_id"
 	FeishuOpenID  FeishuReceiveIDType = "open_id"
 	FeishuUnionID FeishuReceiveIDType = "union_id"
-	FeishuChatID  FeishuReceiveIDType = "chat_id" // 加上这行！
+	FeishuChatID  FeishuReceiveIDType = "chat_id"
 	FeishuEmail   FeishuReceiveIDType = "email"
 )
 
@@ -131,7 +131,7 @@ type AutoRemediationSpec struct {
 	RequireApproval bool `json:"requireApproval,omitempty"`
 
 	// 允许的修复类型（可多选）
-	// +kubebuilder:validation:Enum=scale;restart;config;traffic;resource;feature-toggle
+	// +kubebuilder:validation:ItemsEnum=scale;restart;config;traffic;resource;feature-toggle
 	AllowedActions []string `json:"allowedActions,omitempty"`
 }
 

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"time"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
@@ -47,13 +46,13 @@ func NewCardMessage(receiveID, receiveType, templateID, version string, vars *Ca
 func CreateHealActionCardMessage(v interface{}, receiveID, receiveType, templateID, version string) *CardMessage {
 	// 假设v是包含Reason和Target的结构体
 	vValue := reflect.ValueOf(v).Elem()
-	
+
 	// 获取Reason字段
 	reason := ""
 	if reasonField := vValue.FieldByName("Reason"); reasonField.IsValid() && reasonField.Kind() == reflect.String {
 		reason = reasonField.String()
 	}
-	
+
 	// 获取Target字段及其Kind和LabelSelector
 	targetKind := ""
 	targetLabelSelector := ""
@@ -65,15 +64,15 @@ func CreateHealActionCardMessage(v interface{}, receiveID, receiveType, template
 			targetLabelSelector = selectorField.String()
 		}
 	}
-	
+	fmt.Printf("targetKind: %s, targetLabelSelector: %s\n", targetKind, targetLabelSelector)
 	// 构造卡片变量
 	vars := &CardVariables{
 		ResolveFunction: reason,
-		Namespace:       targetKind,
+		Namespace:       "default",
 		Name:            targetLabelSelector,
-		RequestID:       fmt.Sprintf("req-%s", time.Now().Format("20060102150405")),
+		RequestID:       "FEISHU-TEST-ABC-123",
 	}
-	
+
 	// 创建卡片消息
 	return NewCardMessage(receiveID, receiveType, templateID, version, vars)
 }

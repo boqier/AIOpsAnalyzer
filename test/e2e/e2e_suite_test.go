@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/boqier/AIOpsAnalyze/test/utils"
+	"github.com/boqier/AIOpsAnalyzer/test/utils"
 )
 
 var (

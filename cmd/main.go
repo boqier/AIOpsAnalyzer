@@ -35,8 +35,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	autofixv1 "github.com/boqier/AIOpsAnalyze/api/v1"
-	"github.com/boqier/AIOpsAnalyze/internal/controller"
+	autofixv1 "github.com/boqier/AIOpsAnalyzer/api/v1"
+	"github.com/boqier/AIOpsAnalyzer/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 

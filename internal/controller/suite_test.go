@@ -33,7 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	autofixv1 "github.com/boqier/AIOpsAnalyze/api/v1"
+	autofixv1 "github.com/boqier/AIOpsAnalyzer/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

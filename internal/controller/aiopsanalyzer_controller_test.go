@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	autofixv1 "github.com/boqier/AIOpsAnalyze/api/v1"
+	autofixv1 "github.com/boqier/AIOpsAnalyzer/api/v1"
 )
 
 var _ = Describe("AIOpsAnalyzer Controller", func() {
