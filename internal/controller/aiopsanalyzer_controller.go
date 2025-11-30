@@ -35,6 +35,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	autofixv1 "github.com/boqier/AIOpsAnalyzer/api/v1"
+	"github.com/boqier/AIOpsAnalyzer/internal/controller/feishu"
+	"github.com/boqier/AIOpsAnalyzer/internal/controller/llm"
+	lark "github.com/larksuite/oapi-sdk-go/v3"
 )
 
 // AIOpsAnalyzerReconciler reconciles a AIOpsAnalyzer object
@@ -96,7 +99,109 @@ func (r *AIOpsAnalyzerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// 5. 处理event string（根据您的业务逻辑）
 	log.Info("成功构建event string", "length", len(eventString))
 	log.Info("event string内容", "content", eventString)
-	// 可以将eventString用于后续的AI分析、通知等
+
+	// 6. 调用大模型生成修复方案
+	llmClient, err := llm.NewOpenAIClient()
+	if err != nil {
+		log.Error(err, "创建大模型客户端失败")
+		return ctrl.Result{}, err
+	}
+
+	// 构建大模型请求内容
+	currentTime := time.Now().Format("20060102-150405")
+	content := fmt.Sprintf(`### 当前应用信息（请原样使用）：
+- 应用标签选择器：app.kubernetes.io/name=order-service
+- 命名空间：order-prod
+- 当前副本数：10
+- 当前 CPU limits：2000m
+- 当前 CPU requests：1000m
+- 当前内存 limits：4Gi
+- 当前时间: %s
+
+### 告警/监控数据：
+%s
+
+请立即决定是否需要自愈，如果需要，按以下 JSON 格式输出（只能输出这个 JSON）：
+
+{
+  "action": "heal" | "noop",
+  "namespace": "order-prod",
+  "reason": "一句话中文原因，用于 git commit（≤50字）",
+  "detail": "详细技术说明，包含问题说明，以及解决方案简述，用于 PR body（≤300字）",
+  "patch_file": "20251126-204555-cpu-spike.yaml",
+  "patch_content": [
+    {
+      "op": "replace",
+      "path": "/spec/replicas",
+      "value": 20
+    }
+  ],
+  "target": {
+    "kind": "Deployment",
+    "labelSelector": "app.kubernetes.io/name=order-service"
+  },
+  "suggested_duration": "30m",
+  "risk_level": "low" | "medium" | "high"
+}
+
+如果不需要自愈，输出：
+{
+  "action": "noop",
+  "reason": "当前指标正常，无需干预"
+}`, currentTime, eventString)
+
+	response, err := llmClient.SendMessage(content)
+	if err != nil {
+		log.Error(err, "调用大模型失败")
+		return ctrl.Result{}, err
+	}
+
+	// 7. 解析大模型响应
+	result, err := llm.ParseAutoHealResponse(response)
+	if err != nil {
+		log.Error(err, "解析大模型响应失败")
+		return ctrl.Result{}, err
+	}
+
+	// 8. 根据响应类型执行不同操作
+	switch v := result.(type) {
+	case *llm.HealAction:
+		log.Info("自愈动作")
+		log.Info("原因:", "reason", v.Reason)
+		log.Info("风险:", "risk_level", v.RiskLevel)
+		log.Info("补丁文件:", "patch_file", v.PatchFile)
+
+		// 9. 构造卡片变量并发送卡片
+		// 初始化飞书客户端（暂时使用硬编码值，后续可从配置或Secret中获取）
+		client := lark.NewClient("cli_a9a95e30b7f85bc9", "1tzulFiDFgLlw3AbR3eCQeYZRl08g0Xs")
+
+		// 构造卡片变量
+		cardMsg := feishu.NewCardMessage(
+			aiopsAnalyzer.Spec.Feishu.ReceiveID,             // 接收者ID
+			string(aiopsAnalyzer.Spec.Feishu.ReceiveIDType), // 接收类型
+			"AAqhGHg0Wgux8", // 模板ID（暂时硬编码）
+			"0.0.6",         // 模板版本（暂时硬编码）
+			&feishu.CardVariables{
+				Reason:          v.Reason,
+				Patch:           fmt.Sprintf("%v", v.PatchContent),
+				ResolveFunction: v.Detail,
+				Namespace:       v.Namespace,
+				Name:            v.Target.LabelSelector,
+				RequestID:       fmt.Sprintf("%s-%d", v.PatchFile, time.Now().Unix()),
+			},
+		)
+
+		// 发送卡片
+		err := feishu.SendTemplateCard(ctx, client, cardMsg)
+		if err != nil {
+			log.Error(err, "发送卡片失败")
+		} else {
+			log.Info("卡片发送成功")
+		}
+	case *llm.NoopAction:
+		// 更新status，然后return
+		log.Info("无需操作:", "reason", v.Reason)
+	}
 
 	return ctrl.Result{}, nil
 }

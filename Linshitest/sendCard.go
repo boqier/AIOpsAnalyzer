@@ -1,9 +1,10 @@
-package feishu
+package xixi
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
@@ -11,8 +12,6 @@ import (
 
 // 方便后续不同的卡片模板变量
 type CardVariables struct {
-	Reason          string `json:"reason"`
-	Patch           string `json:"patch"`
 	ResolveFunction string `json:"resolve_fuction"`
 	Namespace       string `json:"namespace"`
 	Name            string `json:"name"`
@@ -36,6 +35,46 @@ func NewCardMessage(receiveID, receiveType, templateID, version string, vars *Ca
 		Version:     version,
 		Variables:   vars,
 	}
+}
+
+// 创建修复动作卡片消息
+// v 是包含Reason和Target信息的结构体指针
+// receiveID 是接收者ID
+// receiveType 是接收类型：chat_id、open_id或user_id
+// templateID 是模板ID
+// version 是模板版本
+func CreateHealActionCardMessage(v interface{}, receiveID, receiveType, templateID, version string) *CardMessage {
+	// 假设v是包含Reason和Target的结构体
+	vValue := reflect.ValueOf(v).Elem()
+
+	// 获取Reason字段
+	reason := ""
+	if reasonField := vValue.FieldByName("Reason"); reasonField.IsValid() && reasonField.Kind() == reflect.String {
+		reason = reasonField.String()
+	}
+
+	// 获取Target字段及其Kind和LabelSelector
+	targetKind := ""
+	targetLabelSelector := ""
+	if targetField := vValue.FieldByName("Target"); targetField.IsValid() && targetField.Kind() == reflect.Struct {
+		if kindField := targetField.FieldByName("Kind"); kindField.IsValid() && kindField.Kind() == reflect.String {
+			targetKind = kindField.String()
+		}
+		if selectorField := targetField.FieldByName("LabelSelector"); selectorField.IsValid() && selectorField.Kind() == reflect.String {
+			targetLabelSelector = selectorField.String()
+		}
+	}
+	fmt.Printf("targetKind: %s, targetLabelSelector: %s\n", targetKind, targetLabelSelector)
+	// 构造卡片变量
+	vars := &CardVariables{
+		ResolveFunction: reason,
+		Namespace:       "default",
+		Name:            targetLabelSelector,
+		RequestID:       "FEISHU-TEST-ABC-123",
+	}
+
+	// 创建卡片消息
+	return NewCardMessage(receiveID, receiveType, templateID, version, vars)
 }
 
 // 最终正确的发送函数

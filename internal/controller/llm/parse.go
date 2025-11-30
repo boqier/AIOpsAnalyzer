@@ -18,6 +18,7 @@ type Target struct {
 
 // heal 时的完整结构体
 type HealAction struct {
+	Namespace         string    `json:"namespace"`
 	Action            string    `json:"action"` // 一定是 "heal"
 	Reason            string    `json:"reason"`
 	Detail            string    `json:"detail"`
@@ -42,7 +43,7 @@ func ParseJSONTo(jsonStr string, target any) error {
 	return nil
 }
 
-// ---------- 主解析逻辑（推荐这样写）----------
+// ---------- 主解析逻辑 ----------
 func ParseAutoHealResponse(jsonStr string) (any, error) {
 	// 第一步：先只解析 action 和 reason，判断是哪种响应
 	type base struct {
