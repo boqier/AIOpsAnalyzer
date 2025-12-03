@@ -9,14 +9,22 @@ import (
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
+// PatchOp 定义与 llm 包中的 PatchOp 结构体相同
+type PatchOp struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value any    `json:"value"` // 支持 int、string、object 等任意类型
+}
+
 // 方便后续不同的卡片模板变量
 type CardVariables struct {
-	Reason          string `json:"reason"`
-	Patch           string `json:"patch"`
-	ResolveFunction string `json:"resolve_fuction"`
-	Namespace       string `json:"namespace"`
-	Name            string `json:"name"`
-	RequestID       string `json:"request_id"`
+	Reason          string    `json:"reason"`
+	Patch           string    `json:"patch"`
+	Patches         []PatchOp `json:"patches"`
+	ResolveFunction string    `json:"resolve_fuction"`
+	Namespace       string    `json:"namespace"`
+	Name            string    `json:"name"`
+	RequestID       string    `json:"request_id"`
 }
 
 type CardMessage struct {

@@ -48,8 +48,8 @@ type AIOpsAnalyzerReconciler struct {
 
 // 常量定义
 const (
-	prometheusQueryEndpoint = "http://101.32.41.178:32606/api/v1/query"
-	lokiQueryEndpoint       = "http://101.32.41.178:32377/loki/api/v1/query"
+	prometheusQueryEndpoint = "http://127.0.0.1:9090/api/v1/query"
+	lokiQueryEndpoint       = "http://127.0.0.1:3100/loki/api/v1/query"
 )
 
 // +kubebuilder:rbac:groups=autofix.aiops.com,resources=aiopsanalyzers,verbs=get;list;watch;create;update;patch;delete
@@ -111,8 +111,8 @@ func (r *AIOpsAnalyzerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	currentTime := time.Now().Format("20060102-150405")
 	content := fmt.Sprintf(`### 当前应用信息（请原样使用）：
 - 应用标签选择器：app.kubernetes.io/name=order-service
-- 命名空间：order-prod
-- 当前副本数：10
+- 命名空间：product-a
+- 当前副本数：1
 - 当前 CPU limits：2000m
 - 当前 CPU requests：1000m
 - 当前内存 limits：4Gi
@@ -175,15 +175,26 @@ func (r *AIOpsAnalyzerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		// 初始化飞书客户端（暂时使用硬编码值，后续可从配置或Secret中获取）
 		client := lark.NewClient("cli_a9a95e30b7f85bc9", "1tzulFiDFgLlw3AbR3eCQeYZRl08g0Xs")
 
+		// 将 []llm.PatchOp 转换为 []feishu.PatchOp
+		patches := make([]feishu.PatchOp, len(v.PatchContent))
+		for i, op := range v.PatchContent {
+			patches[i] = feishu.PatchOp{
+				Op:    op.Op,
+				Path:  op.Path,
+				Value: op.Value,
+			}
+		}
+
 		// 构造卡片变量
 		cardMsg := feishu.NewCardMessage(
 			aiopsAnalyzer.Spec.Feishu.ReceiveID,             // 接收者ID
 			string(aiopsAnalyzer.Spec.Feishu.ReceiveIDType), // 接收类型
 			"AAqhGHg0Wgux8", // 模板ID（暂时硬编码）
-			"0.0.6",         // 模板版本（暂时硬编码）
+			"0.0.9",         // 模板版本（暂时硬编码）
 			&feishu.CardVariables{
 				Reason:          v.Reason,
 				Patch:           fmt.Sprintf("%v", v.PatchContent),
+				Patches:         patches,
 				ResolveFunction: v.Detail,
 				Namespace:       v.Namespace,
 				Name:            v.Target.LabelSelector,

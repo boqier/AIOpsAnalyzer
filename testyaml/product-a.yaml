@@ -29,7 +29,7 @@ spec:
           - -c
           - >
             while true; do
-              echo "$(date) - ERROR - Something bad happened in web-app-backend (env=prod)" ;
+              echo "$(date) - ERROR - deployment need to Expand capacity to 3" ;
               sleep 5;
             done
         resources:
